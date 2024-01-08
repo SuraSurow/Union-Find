@@ -1,67 +1,39 @@
-//
-// Created by admin on 07.01.2024.
-//
-
-#ifndef UNION_FIND_DYNAMICARRAY_H
-#define UNION_FIND_DYNAMICARRAY_H
-
-#include <iostream>
-#include <string>
-#include <utility>
-#include <math.h>
-#include <chrono>
-#include <random>
-
-unsigned int randValue(unsigned int min , unsigned int max)
-{
-    std::random_device dev;
-    std::mt19937 random(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> zakres(min, max);
-    return zakres(random);
-}
-
 template<typename Data_type>
 class Dynamic_Array {
+    typedef void (Data_type::*SetterFunction)(const Data_type&);
+
 public:
-    Data_type *array;
+    Data_type* array;
     unsigned int currentSize;
     unsigned int maxSize;
     float growthRate;
+    SetterFunction setterFunction;
 
-    Dynamic_Array() : currentSize(0), maxSize(1), growthRate(2.0) {
+    explicit Dynamic_Array(SetterFunction _setterFunction) : currentSize(0), maxSize(1), growthRate(2.0), setterFunction(_setterFunction) {
         array = new Data_type[maxSize];
     }
 
-    explicit Dynamic_Array(unsigned int max) : currentSize(0), maxSize(max), growthRate(2.0) {
+    explicit Dynamic_Array(unsigned int max, SetterFunction _setterFunction) : currentSize(0), maxSize(max), growthRate(2.0), setterFunction(_setterFunction) {
         array = new Data_type[maxSize];
     }
 
     ~Dynamic_Array() {
-        delete array;
+        delete[] array;
     }
 
     Dynamic_Array(const Dynamic_Array<Data_type> &otherDynamic) {
         maxSize = otherDynamic.maxSize;
         currentSize = otherDynamic.currentSize;
         growthRate = otherDynamic.growthRate;
+        setterFunction = otherDynamic.setterFunction;
         array = new Data_type[maxSize];
         for (unsigned int i = 0; i < currentSize; i++) {
             array[i] = otherDynamic.array[i];
         }
     }
 
-    Dynamic_Array(const Dynamic_Array<Data_type> &otherDynamic, bool changeSize) {
-        growthRate = otherDynamic.growthRate;
-        if (changeSize) {
-            maxSize = otherDynamic.maxSize * growthRate;
-        } else {
-            maxSize = otherDynamic.maxSize;
-        }
-        currentSize = otherDynamic.currentSize;
-        array = new Data_type[maxSize];
-        for (unsigned int i = 0; i < currentSize; i++) {
-            array[i] = otherDynamic.array[i];
-        }
+    void quickSort() {
+        quickSort(0, currentSize - 1);
     }
 
     void addObj(Data_type *obj) {
@@ -78,27 +50,27 @@ public:
         currentSize++;
     }
 
-    Data_type getObj(unsigned int indeks) {
-        if (indeks > currentSize) {
-            std::cerr << "\n'getObj(" << indeks << ") indeks wiekszy od tablicy!!\n";
+    Data_type* getObj(unsigned int indeks) {
+        if (indeks >= currentSize) {
+            std::cerr << "\n'getObj(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
             return nullptr;
         }
-        return array[indeks];
+        return &array[indeks];
     }
 
-    bool editObjDate(Data_type inputData, unsigned int indeks) {
-        Data_type editObj = getObj(indeks);
-        if (getObj(indeks) == nullptr) return false;
-        else {
-            (*editObj)(inputData);//PRZECIAZONY OPERATOR !!!!
-            return true;
+    bool editObjDate(const Data_type& inputData, unsigned int indeks) {
+        if (indeks >= currentSize) {
+            std::cerr << "\n'editObjDate(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
+            return false;
         }
+
+        (array[indeks].*setterFunction)(inputData);
+        return true;
     }
 
     bool clear() {
         while (currentSize > 0) {
-            Data_type currentToDelete = array[currentSize - 1];
-            delete currentToDelete;
+            delete array[currentSize - 1];
             currentSize--;
         }
         maxSize = 1;
@@ -108,7 +80,7 @@ public:
     void print() {
         std::cout << "\n===================================================================================="
                      "\nAkt. Rozmiar: " << currentSize <<
-                  "\t|\tWsp. Powiekszenia: " << growthRate <<
+                  "\t|\tWsp. Powiększenia: " << growthRate <<
                   "\t|\tMaks. Rozmiar: " << maxSize <<
                   "\n====================================================================================";
     }
@@ -123,21 +95,27 @@ public:
         }
     }
 
-    bool BubbleSort(bool growing) {
-        for (int i = 0; i < currentSize - 1; i++) {
-            for (int j = 1; j < currentSize - i; j++) {
-
-                if (growing) {
-                    if (objectCompare(array[j - 1], array[j]) >= 1) {
-                        switchObj(j - 1, j);
-                    }
-                } else {
-                    if (objectCompare(array[j - 1], array[j]) <= -1) {
-                        switchObj(j - 1, j);
-                    }
-                }
-            }
+private:
+    void quickSort(int low, int high) {
+        if (low < high) {
+            int pivotIndex = partition(low, high);
+            quickSort(low, pivotIndex - 1);
+            quickSort(pivotIndex + 1, high);
         }
     }
+
+    int partition(int low, int high) {
+        Data_type pivot = array[high];
+        int i = low - 1;
+
+        for (int j = low; j < high; j++) {
+            if (array[j] <= pivot) {
+                i++;
+                switchObj(i, j);
+            }
+        }
+
+        switchObj(i + 1, high);
+        return i + 1;
+    }
 };
-#endif //UNION_FIND_DYNAMICARRAY_H
