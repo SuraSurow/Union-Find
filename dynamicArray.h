@@ -1,19 +1,17 @@
 template<typename Data_type>
 class Dynamic_Array {
-    typedef void (Data_type::*SetterFunction)(const Data_type&);
 
 public:
     Data_type* array;
     unsigned int currentSize;
     unsigned int maxSize;
     float growthRate;
-    SetterFunction setterFunction;
 
-    explicit Dynamic_Array(SetterFunction _setterFunction) : currentSize(0), maxSize(1), growthRate(2.0), setterFunction(_setterFunction) {
+    Dynamic_Array() : currentSize(0), maxSize(1), growthRate(2.0) {
         array = new Data_type[maxSize];
     }
 
-    explicit Dynamic_Array(unsigned int max, SetterFunction _setterFunction) : currentSize(0), maxSize(max), growthRate(2.0), setterFunction(_setterFunction) {
+    Dynamic_Array(unsigned int max) : currentSize(0), maxSize(max), growthRate(2.0) {
         array = new Data_type[maxSize];
     }
 
@@ -25,16 +23,23 @@ public:
         maxSize = otherDynamic.maxSize;
         currentSize = otherDynamic.currentSize;
         growthRate = otherDynamic.growthRate;
-        setterFunction = otherDynamic.setterFunction;
         array = new Data_type[maxSize];
         for (unsigned int i = 0; i < currentSize; i++) {
             array[i] = otherDynamic.array[i];
         }
     }
 
-    void quickSort() {
-        quickSort(0, currentSize - 1);
+    void fillOutZeros() {
+        if ( currentSize < 0 ){
+            std::cerr<<"\nError\nfillOutZeros call -> currentSize < 0 \n";
+            return;
+        }
+        static_assert(std::is_arithmetic<Data_type>::value, "Type must be arithmetic");
+        for (unsigned int i = 0; i < currentSize; ++i) {
+            array[i] = static_cast<Data_type>(0);
+        }
     }
+
 
     void addObj(Data_type *obj) {
         if (currentSize == maxSize) {
@@ -57,7 +62,7 @@ public:
         }
         return &array[indeks];
     }
-
+/*
     bool editObjDate(const Data_type& inputData, unsigned int indeks) {
         if (indeks >= currentSize) {
             std::cerr << "\n'editObjDate(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
@@ -67,7 +72,7 @@ public:
         (array[indeks].*setterFunction)(inputData);
         return true;
     }
-
+*/
     bool clear() {
         while (currentSize > 0) {
             delete array[currentSize - 1];
@@ -95,27 +100,22 @@ public:
         }
     }
 
-private:
-    void quickSort(int low, int high) {
-        if (low < high) {
-            int pivotIndex = partition(low, high);
-            quickSort(low, pivotIndex - 1);
-            quickSort(pivotIndex + 1, high);
+    void resize(unsigned int newSize) {
+        if (newSize == currentSize) {
+            return;
         }
+        Data_type *newArray = new Data_type[newSize];
+        unsigned int elementsToCopy = (currentSize < newSize) ? currentSize : newSize;
+        for (unsigned int i = 0; i < elementsToCopy; ++i) {
+            newArray[i] = array[i];
+        }
+        delete[] array;
+        array = newArray;
+        currentSize = newSize;
+        maxSize = newSize;
     }
 
-    int partition(int low, int high) {
-        Data_type pivot = array[high];
-        int i = low - 1;
 
-        for (int j = low; j < high; j++) {
-            if (array[j] <= pivot) {
-                i++;
-                switchObj(i, j);
-            }
-        }
 
-        switchObj(i + 1, high);
-        return i + 1;
-    }
+
 };
