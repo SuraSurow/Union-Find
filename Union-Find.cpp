@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <iomanip>
 #include "dynamicArray.h"
 const int ERROR_FLAG = -1;
 
@@ -9,6 +11,10 @@ public:
     double x , y;
     GraphNode():x(0.0),y(0.0){};
     GraphNode( double x,double y):x(x),y(y){};
+
+    bool operator==(const GraphNode& other) const {
+        return (x == other.x) && (y == other.y);
+    }
 };
 
 class GraphEdge
@@ -27,12 +33,30 @@ public:
     Dynamic_Array<GraphEdge>edge;
     Dynamic_Array<GraphNode>node;
     explicit Graph(int vertives) :vertices(vertives), edge(), node() {}
+
+
+
     void quickSortEdges() {
         quickSortEdges(0, edge.currentSize - 1);
     }
     void addEdge(int source, int destination, double cost) {
-        GraphEdge newEdge(source, destination, cost);
-        edge.addObj(&newEdge);
+        // Sprawdź, czy wierzchołki istnieją w grafie
+        if (source < vertices && destination < vertices) {
+            GraphEdge newEdge(source, destination, cost);
+            edge.addObj(&newEdge);
+        } else {
+            std::cerr << "Błąd dodawania krawędzi: Wierzchołki nie istnieją!" << std::endl;
+        }
+    }
+
+    void addNode(double x, double y) {
+        GraphNode newNode(x, y);
+
+        if (!node.objExist(newNode)) {
+            node.addObj(&newNode);
+        } else {
+            std::cerr << "Błąd dodawania węzła: Węzeł już istnieje!" << std::endl;
+        }
     }
 
 private:
@@ -72,12 +96,15 @@ class UnionFind
     Dynamic_Array<int>parent;
     Dynamic_Array<int>rank;
 public:
+
     UnionFind(int numOfNodes) : parent(numOfNodes), rank(numOfNodes)
     {
-        rank.fillOutZeros();
         for (int i = 0; i < numOfNodes; ++i)
         {
-            *parent.getObj(i) = i;
+            int *addParent = new int(i);
+            int *addRank = new int (0);
+            parent.addObj(addParent);
+            rank.addObj(addRank);
         }
     }
     void UnionByRank(int firstNode, int secondNode)
@@ -155,28 +182,78 @@ static Graph kruskal(Graph graf)
 }
 
 
-Graph read(const std::string &name)
-{
+Graph read(const std::string &name) {
     std::ifstream file(name);
-    if( file.bad()){
-        std::cerr<<"\nERROR\nFILE = '"<<&name<<"' are bad!!!\n";
+    if (!file.is_open()) {
+        std::cerr << "\nERROR\nCould not open file: " << name << "\n";
+        return Graph(0);  // Zwróć pusty graf w przypadku problemu z otwarciem pliku
     }
-    else if ( file.eof()){
-        std::cerr<<"\nERROR\nFILE = '"<<&name<<"' are eof!!!\n";
+
+    int numNodes = 0;
+    int numEdges = 0;
+    file >> numNodes;
+
+    Graph output(numNodes);
+    for (int i = 0; i < numNodes; ++i) {
+        double x = 0;
+        double y = 0;
+        if (!(file >> x >> y)) {
+            std::cerr << "\nERROR\nFailed to read coordinates for node " << i << "\n";
+            return Graph(0);  // Zwróć pusty graf w przypadku błędu wczytywania współrzędnych
+        }
+        output.addNode(x, y);
     }
-    else if ( file.fail()){
-        std::cerr<<"\nERROR\nFILE = '"<<&name<<" 'are fail!!!\n";
+
+    file >> numEdges;
+    for (int i = 0; i < numEdges; i++) {
+        int source, destination;
+        double cost;
+        if (!(file >> source >> destination >> cost)) {
+            std::cerr << "\nERROR\nFailed to read edge information for edge " << i << "\n";
+            return Graph(0);  // Zwróć pusty graf w przypadku błędu wczytywania informacji o krawędzi
+        }
+        output.addEdge(source, destination, cost);
     }
-    else
-    {
-        int node , edge;
-    }
+
+    file.close();
+    return output;
 }
-;
 
 
-int main (void)
-{
 
-    std::string file = "C:\\Users\\admin\\CLionProjects\\Union-Find\\Pklesk_kruskal_union_find\\excercises\\g1.txt";
+
+
+#include <iostream>
+#include <iomanip>
+#include <chrono>
+#include <iostream>
+#include <iomanip>
+#include <chrono>
+
+int main(void) {
+    for (int i = 1; i <= 3; ++i) {
+        std::string filename = "C:\\Users\\admin\\CLionProjects\\Union-Find\\Pklesk_kruskal_union_find\\excercises\\g" + std::to_string(i) + ".txt";
+        Graph graf = read(filename);
+
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        Graph mts = kruskal(graf);
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> duration = end - start;
+
+        std::cout << "\nFile:\tg" << i <<".txt"<< std::endl;
+        std::cout << "Edge:\t" << mts.edge.currentSize+1 << std::endl;
+
+        double Cost = 0.0;
+        for (int i = 0; i < mts.edge.currentSize; ++i) {
+            Cost += mts.edge.getObj(i)->cost;
+        }
+        std::cout << "Weight\t: " << Cost << std::endl;
+        std::cout << "Time\t: " << std::fixed << std::setprecision(5) << duration.count() << " sekundy." << std::endl;
+
+        std::cout << std::endl;
+    }
+
+    return 0;
 }
+

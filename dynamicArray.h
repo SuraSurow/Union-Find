@@ -29,16 +29,23 @@ public:
         }
     }
 
-    void fillOutZeros() {
-        if ( currentSize < 0 ){
-            std::cerr<<"\nError\nfillOutZeros call -> currentSize < 0 \n";
-            return;
+    Data_type * getObj(unsigned int indeks) const {
+        if (indeks >= currentSize) {
+            std::cerr << "\n'getObj(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
+            return nullptr;
         }
-        static_assert(std::is_arithmetic<Data_type>::value, "Type must be arithmetic");
-        for (unsigned int i = 0; i < currentSize; ++i) {
-            array[i] = static_cast<Data_type>(0);
-        }
+        return &array[indeks];
     }
+
+    bool objExist( Data_type& value) const {
+        for (unsigned int i = 0; i < currentSize; ++i) {
+            if (*getObj(i) == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 
     void addObj(Data_type *obj) {
@@ -55,13 +62,7 @@ public:
         currentSize++;
     }
 
-    Data_type* getObj(unsigned int indeks) {
-        if (indeks >= currentSize) {
-            std::cerr << "\n'getObj(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
-            return nullptr;
-        }
-        return &array[indeks];
-    }
+
 /*
     bool editObjDate(const Data_type& inputData, unsigned int indeks) {
         if (indeks >= currentSize) {
