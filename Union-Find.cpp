@@ -2,8 +2,83 @@
 #include <fstream>
 #include <chrono>
 #include <iomanip>
-#include "dynamicArray.h"
+
 const int ERROR_FLAG = -1;
+int licznikFind = 0;
+
+
+//-----------
+template<typename Data_type>
+class Dynamic_Array {
+
+public:
+    Data_type* array;
+    unsigned int currentSize;
+    unsigned int maxSize;
+    float growthRate;
+
+    Dynamic_Array() : currentSize(0), maxSize(1), growthRate(2.0) {
+        array = new Data_type[maxSize];
+    }
+    Dynamic_Array(unsigned int max) : currentSize(0), maxSize(max), growthRate(2.0) {
+        array = new Data_type[maxSize];
+    }
+    Dynamic_Array(const Dynamic_Array<Data_type> &otherDynamic) {
+        maxSize = otherDynamic.maxSize;
+        currentSize = otherDynamic.currentSize;
+        growthRate = otherDynamic.growthRate;
+        array = new Data_type[maxSize];
+        for (unsigned int i = 0; i < currentSize; i++) {
+            array[i] = otherDynamic.array[i];
+        }
+    }
+
+    ~Dynamic_Array() {
+        delete[] array;
+    }
+
+    Data_type * getObj(unsigned int indeks) const {
+        if (indeks >= currentSize) {
+            std::cerr << "\n'getObj(" << indeks << ") indeks większy lub równy od rozmiaru tablicy!!\n";
+            return nullptr;
+        }
+        return &array[indeks];
+    }
+
+    bool objExist( Data_type& value) const {
+        for (unsigned int i = 0; i < currentSize; ++i) {
+            if (*getObj(i) == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void addObj(Data_type *obj) {
+        if (currentSize == maxSize) {
+            maxSize *= growthRate;
+            Data_type *newArray = new Data_type[maxSize];
+            for (unsigned int i = 0; i < currentSize; i++) {
+                newArray[i] = array[i];
+            }
+            delete[] array;
+            array = newArray;
+        }
+        array[currentSize] = *obj;
+        currentSize++;
+    }
+
+    void switchObj(unsigned int indexOne, unsigned int indexTwo) {
+        if (indexOne < currentSize && indexTwo < currentSize) {
+            Data_type temp = array[indexOne];
+            array[indexOne] = array[indexTwo];
+            array[indexTwo] = temp;
+        } else {
+            std::cerr << "Nieprawidłowy indeks." << std::endl;
+        }
+    }
+};
+//-----------
 
 class GraphNode
 {
@@ -23,7 +98,7 @@ public:
     int source,destination;
     double cost;
     GraphEdge():source(0),destination(0),cost(0.0){};
-    GraphEdge(int source , int destination, double cost): source(source), destination(destination), cost(cost){};\
+    GraphEdge(int source , int destination, double cost): source(source), destination(destination), cost(cost){};
 };
 
 class Graph
@@ -32,15 +107,9 @@ public:
     int vertices;
     Dynamic_Array<GraphEdge>edge;
     Dynamic_Array<GraphNode>node;
-    explicit Graph(int vertives) :vertices(vertives), edge(), node() {}
+     Graph(int vertives) :vertices(vertives), edge(), node() {}
 
-
-
-    void quickSortEdges() {
-        quickSortEdges(0, edge.currentSize - 1);
-    }
     void addEdge(int source, int destination, double cost) {
-        // Sprawdź, czy wierzchołki istnieją w grafie
         if (source < vertices && destination < vertices) {
             GraphEdge newEdge(source, destination, cost);
             edge.addObj(&newEdge);
@@ -57,6 +126,9 @@ public:
         } else {
             std::cerr << "Błąd dodawania węzła: Węzeł już istnieje!" << std::endl;
         }
+    }
+    void quickSortEdges() {
+        quickSortEdges(0, edge.currentSize - 1);
     }
 
 private:
@@ -152,6 +224,7 @@ public:
     }
     int Find(int indexNode)
     {
+        licznikFind++;
         if(indexNode> parent.currentSize || indexNode < 0 ){
             std::cerr<<"\nError\nFind function call -> Index out of scope!!!\n";
             return ERROR_FLAG;
@@ -159,6 +232,7 @@ public:
         if(*parent.getObj(indexNode ) != indexNode)
         {
             *parent.getObj(indexNode )= Find(*parent.getObj(indexNode));
+
         }
         return *parent.getObj(indexNode);
     }
@@ -199,7 +273,7 @@ Graph read(const std::string &name) {
         double y = 0;
         if (!(file >> x >> y)) {
             std::cerr << "\nERROR\nFailed to read coordinates for node " << i << "\n";
-            return Graph(0);  // Zwróć pusty graf w przypadku błędu wczytywania współrzędnych
+            return Graph(0);
         }
         output.addNode(x, y);
     }
@@ -210,7 +284,7 @@ Graph read(const std::string &name) {
         double cost;
         if (!(file >> source >> destination >> cost)) {
             std::cerr << "\nERROR\nFailed to read edge information for edge " << i << "\n";
-            return Graph(0);  // Zwróć pusty graf w przypadku błędu wczytywania informacji o krawędzi
+            return Graph(0);
         }
         output.addEdge(source, destination, cost);
     }
@@ -219,16 +293,6 @@ Graph read(const std::string &name) {
     return output;
 }
 
-
-
-
-
-#include <iostream>
-#include <iomanip>
-#include <chrono>
-#include <iostream>
-#include <iomanip>
-#include <chrono>
 
 int main(void) {
     for (int i = 1; i <= 3; ++i) {
@@ -242,7 +306,9 @@ int main(void) {
         std::chrono::duration<double> duration = end - start;
 
         std::cout << "\nFile:\tg" << i <<".txt"<< std::endl;
-        std::cout << "Edge:\t" << mts.edge.currentSize+1 << std::endl;
+        std::cout << "Edge:\t" << mts.edge.currentSize << std::endl;
+        std::cout << "Find():\t"<<licznikFind<<std::endl;
+        licznikFind=0;
 
         double Cost = 0.0;
         for (int i = 0; i < mts.edge.currentSize; ++i) {
